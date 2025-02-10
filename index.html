@@ -68,13 +68,35 @@
             position: relative;
         }
         .no-button:hover {
-            transform: translate(calc(50px - 100% * Math.random()), calc(50px - 100% * Math.random()));
+            transform: translate(calc(50px * (Math.random() - 0.5)), calc(50px * (Math.random() - 0.5)));
         }
         .yes-button {
             transition: transform 0.3s ease-in-out;
         }
         .yes-button:hover {
             transform: scale(1.3);
+        }
+        /* Progress Bar */
+        #progress-bar {
+            margin-bottom: 20px;
+            height: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #progress {
+            width: 0%;
+            height: 100%;
+            background-color: #e91e63;
+            transition: width 0.3s ease-in-out;
+        }
+        /* Restart Button */
+        #restart-btn {
+            margin-top: 20px;
+            background-color: #e91e63; /* Pink background */
+        }
+        #restart-btn:hover {
+            background-color: #c2185b; /* Darker pink on hover */
         }
     </style>
 </head>
@@ -88,11 +110,14 @@
     
     <div id="quiz-container" style="display: none;">
         <h1>Valentine's Quiz</h1>
+        <div id="progress-bar">
+            <div id="progress"></div>
+        </div>
         <p id="question"></p>
         <div id="options"></div>
         <div id="wrong-answer">
             <p id="wrong-text"></p>
-            <img src="https://i.postimg.cc/85kc8SmK/Messenger-creation-a07c2379-2fa5-4eed-a1d1-e00452d5d4f1.jpg" alt="Wrong answer">
+            <img id="wrong-image" src="https://i.postimg.cc/85kc8SmK/Messenger-creation-a07c2379-2fa5-4eed-a1d1-e00452d5d4f1.jpg" alt="Wrong answer">
         </div>
     </div>
 
@@ -103,57 +128,135 @@
             { question: "Where was our first date?", options: ["The Keg", "Lakeshore", "Osmow's", "Pho Now"], answer: "Lakeshore" },
             { question: "Who said 'I love you' first?", options: ["Me", "You", "Both at the same time", "Neither"], answer: "Me" },
             { question: "What’s my favorite nickname for you?", options: ["Vickypie", "Licky", "Baby", "BOBE"], answer: "BOBE" },
-            { question: "How do I like my bubble tea?", options: ["Matcha", "Chocolate", "Fruity", "Brown Sugar"], answer: "Fruity" },
-            { question: "What's the colour of my gifts to you?", options: ["Red", "Yellow", "Magenta", "Green"], answer: "Green" },
-            { question: "What is our song?", options: ["The Avengers Theme", "Iris", "God's Plan", "Die For You"], answer: "Die For You" },
+            { question: "How do I like my bubble tea?", options: ["Matcha", "Fruity", "Chocolate", "Brown Sugar"], answer: "Fruity" },
+            { question: "What's the colour of my gifts to you?", options: ["Green", "Yellow", "Magenta", "Red"], answer: "Green" },
+            { question: "What is our song?", options: ["The Avengers Theme", "Die For You", "God's Plan", "Iris"], answer: "Die For You" },
             { question: "What’s something you do that always makes me smile?", options: ["When you sleep on me", "When you laugh", "When you smile", "All of the above"], answer: "All of the above" },
             { question: "Will you be my Valentine?", options: ["No", "Yes"], answer: "Yes" }
         ];
         
         let currentQuestionIndex = 0;
-        
+
         function startQuiz() {
             document.getElementById("intro-container").style.display = "none";
             document.getElementById("quiz-container").style.display = "block";
+            resetQuiz();
             displayQuestion();
         }
-        
+
         function displayQuestion() {
             let questionElement = document.getElementById("question");
             let optionsElement = document.getElementById("options");
             let wrongAnswerElement = document.getElementById("wrong-answer");
-            
+
+            // Update progress bar
+            updateProgressBar();
+
             questionElement.textContent = questions[currentQuestionIndex].question;
             optionsElement.innerHTML = "";
             wrongAnswerElement.style.display = "none";
-            
+
             questions[currentQuestionIndex].options.forEach(option => {
                 let button = document.createElement("button");
                 button.textContent = option;
                 button.classList.add(option === "No" ? "no-button" : "yes-button");
-                button.onclick = () => checkAnswer(option, wrongAnswerElement);
+                button.setAttribute('aria-label', `Option: ${option}`);
+                
+                if (currentQuestionIndex === questions.length - 1 && option === "No") {
+                    button.onclick = () => handleLastQuestionNoClick(wrongAnswerElement);
+                } else {
+                    button.onclick = () => checkAnswer(option, wrongAnswerElement);
+                }
+                
                 optionsElement.appendChild(button);
             });
         }
-        
+
         function checkAnswer(selectedAnswer, wrongAnswerElement) {
             let correctAnswer = questions[currentQuestionIndex].answer;
-            let wrongText = document.getElementById("wrong-text");
-            
+
             if (selectedAnswer === correctAnswer) {
                 currentQuestionIndex++;
                 if (currentQuestionIndex < questions.length) {
                     displayQuestion();
                 } else {
-                    document.getElementById("quiz-container").innerHTML = "<h1>YAAAAAAAAAYYYYYYY!!!</h1><h2>❤️❤️❤️ Happy Valentine's Day!!! ❤️❤️❤️</h2><h3>I love you so much baby, you're my everything and I HOPE YOU KNOW DAT.</h3><img src='https://i.postimg.cc/2yV567Jn/20240522-021322.jpg' alt='Valentine Image'>";
+                    showFinalPage();
                 }
             } else {
-                wrongText.textContent = currentQuestionIndex === questions.length - 1 ? "BAA BAAAAAA 😡" : "No gilly!!!";
+                document.getElementById("wrong-text").textContent = "no gilly!!! 😠";
                 wrongAnswerElement.style.display = "block";
                 wrongAnswerElement.classList.add("shake");
             }
         }
+
+        function handleLastQuestionNoClick(wrongAnswerElement) {
+            document.getElementById("wrong-text").textContent = "BAA BAAAAAA 😡";
+            wrongAnswerElement.style.display = "block";
+            wrongAnswerElement.classList.add("shake");
+
+            // Add shaking image for "BAA BAAAAAA 😡"
+            const wrongImage = document.getElementById("wrong-image");
+            wrongImage.src = "https://i.postimg.cc/J0vzBBVv/Screenshot-20250210-144759-Gallery.png"; 
+            wrongImage.classList.add("shake");
+
+            // Get the "Yes" and "No" buttons
+            const yesButton = document.querySelector('.yes-button');
+            const noButton = document.querySelector('.no-button');
+
+            // Increase the size of the "Yes" button
+            yesButton.style.transform = `scale(${1.3 + (0.1 * noClickCount)})`;
+
+            // Decrease the size of the "No" button
+            noButton.style.transform = `scale(${1 - (0.1 * noClickCount)})`;
+
+            // Move the "No" button around
+            noButton.style.position = 'absolute';
+            noButton.style.top = `${Math.random() * 50}px`;
+            noButton.style.left = `${Math.random() * 50}px`;
+
+            noClickCount++;
+        }
+
+        function showFinalPage() {
+            document.getElementById("quiz-container").innerHTML = `
+                <h1>YAAAYYY!!! 🥰🥰🥰</h1>
+                <h2>💖 Happy Valentine's Day!!! 💖</h2>
+                <h3>I love you so much baby, you're my everything and I HOPE YOU KNOW DAT.</h3>
+                <img src='https://i.postimg.cc/2yV567Jn/20240522-021322.jpg' alt='Valentine Image'>
+                <button id="restart-btn" onclick="restartQuiz()">Restart Quiz</button>
+            `;
+        }
+
+        function restartQuiz() {
+            resetQuiz();
+            document.getElementById("quiz-container").style.display = "none";
+            document.getElementById("intro-container").style.display = "block";
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            noClickCount = 0;
+            document.getElementById("quiz-container").innerHTML = `
+                <h1>Valentine's Quiz</h1>
+                <div id="progress-bar">
+                    <div id="progress"></div>
+                </div>
+                <p id="question"></p>
+                <div id="options"></div>
+                <div id="wrong-answer">
+                    <p id="wrong-text"></p>
+                    <img id="wrong-image" src="https://i.postimg.cc/85kc8SmK/Messenger-creation-a07c2379-2fa5-4eed-a1d1-e00452d5d4f1.jpg" alt="Wrong answer">
+                </div>
+            `;
+        }
+
+        let noClickCount = 0;
+
+        function updateProgressBar() {
+            const progress = document.getElementById("progress");
+            const progressPercentage = ((currentQuestionIndex + 1) / questions.length) * 100;
+            progress.style.width = `${progressPercentage}%`;
+        }
     </script>
 </body>
 </html>
-
